@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Дэвтэр — хичээлийн тэмдэглэл</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -225,6 +226,45 @@ input[type=range]{width:90px;accent-color:var(--accent)}
   .bctl{right:0}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---- v2 ---- */
+:root{--dot:#B7C2DC}
+:root[data-theme="dark"]{--dot:#3B4A72}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--dot:#3B4A72}}
+body[data-paper="dots"] .txt{background-image:radial-gradient(circle,var(--dot) 1.5px,transparent 1.9px);background-size:32px 32px;background-position:16px 16px}
+body[data-paper="grid"] .txt{background-image:linear-gradient(var(--rule) 1px,transparent 1px),linear-gradient(90deg,var(--rule) 1px,transparent 1px);background-size:32px 32px;background-position:0 31px}
+body[data-paper="dots"] .stage.grid{background-image:radial-gradient(circle,rgba(47,91,234,.42) 1.5px,transparent 1.9px);background-size:24px 24px;background-position:12px 12px}
+body[data-paper="lines"] .stage.grid{background-image:linear-gradient(rgba(47,91,234,.16) 1px,transparent 1px);background-size:100% 28px}
+.tbtns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.head .btn.sm{flex:0 0 auto}
+.task-sum{display:flex;align-items:center;gap:16px;width:100%;text-align:left;cursor:pointer;padding:16px 18px;border-radius:14px;border:1px solid var(--line);border-left:6px solid var(--c);background:var(--paper)}
+.task-sum:hover{border-color:var(--muted);border-left-color:var(--c)}
+.ts-l{display:flex;flex-direction:column;flex:1;min-width:0}
+.ts-l strong{font-size:18px}
+.prog{height:8px;width:110px;border-radius:4px;background:var(--line);overflow:hidden;flex:0 0 auto}
+.prog i{display:block;height:100%;background:var(--c)}
+.chev{display:inline-flex;transition:transform .15s}
+[aria-expanded="true"]>.chev,[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.tlist{display:grid;gap:10px;margin-top:14px}
+.task{border:1px solid var(--line);border-radius:12px;background:var(--paper);border-left:5px solid var(--c)}
+.task-h{display:flex;align-items:center;gap:10px;padding:6px 12px}
+.task-h input[type=checkbox]{width:19px;height:19px;accent-color:var(--c);flex:0 0 auto}
+.task-toggle{flex:1;min-width:0;display:flex;align-items:center;gap:12px;text-align:left;cursor:pointer;background:none;border:0;padding:8px 0}
+.task-toggle .no{font-family:var(--hand);font-size:26px;font-weight:700;color:var(--c);white-space:nowrap}
+.task-toggle .ttl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.task.done .ttl{text-decoration:line-through;color:var(--muted)}
+.task-b{display:grid;gap:4px;padding:10px 16px 16px;border-top:1px dashed var(--line)}
+.caption2{resize:vertical;line-height:1.5}
+.linked{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px}
+.chk{display:flex;gap:10px;align-items:flex-start;margin:6px 0;cursor:pointer}
+.chk input{margin-top:4px;accent-color:var(--accent)}
+.dlg.wide{width:min(720px,100%)}
+.qrbig{width:min(340px,100%);height:auto;image-rendering:pixelated;border:1px solid var(--line);border-radius:8px;background:#fff}
+.sh-t{font-family:var(--hand);font-size:34px;margin:2px 0 8px;line-height:1.1}
+.sh-p{white-space:pre-wrap;overflow-wrap:anywhere;margin:0 0 10px}
+.sh-task{border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-bottom:8px}
+.sh-task summary{cursor:pointer;font-weight:700}
+.sh-task[open] summary{margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -234,9 +274,11 @@ input[type=range]{width:90px;accent-color:var(--accent)}
     <div class="side-title">Миний хичээлүүд</div>
     <nav class="courses" id="courseList" aria-label="Хичээлүүд"></nav>
     <button type="button" class="btn add-course" id="addCourseBtn"></button>
+    <button type="button" class="btn add-course" id="importBtn"></button>
     <div class="side-foot">
       <span class="muted small" id="status">Бэлэн</span>
       <span class="row" style="gap:2px">
+        <button type="button" class="btn ghost sm" id="setBtn" aria-label="Тохиргоо" title="Тохиргоо"></button>
         <button type="button" class="btn ghost sm" id="themeBtn" aria-label="Гэрэл / харанхуй горим солих" title="Гэрэл / харанхуй горим"></button>
         <button type="button" class="btn sm" id="bellBtn" aria-label="Сануулга"></button>
       </span>
@@ -286,7 +328,7 @@ const P={
   eraser:'<path d="M20 20H9L4 15l10-10 6 6-8 9"/>',
   img:'<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-9 9"/>',
   up:'<path d="M6 15l6-6 6 6"/>',down:'<path d="M6 9l6 6 6-6"/>',moon:'<path d="M20 14A8 8 0 1110 4a6 6 0 0010 10z"/>',
-  text:'<path d="M5 6h14M12 6v13M9 19h6"/>',draw:'<path d="M3 17c3-8 6 4 9-3s5-6 9-6"/>'
+  text:'<path d="M5 6h14M12 6v13M9 19h6"/>',qr:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v3M14 20h3M20 20h1"/>',pdf:'<path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',draw:'<path d="M3 17c3-8 6 4 9-3s5-6 9-6"/>'
 };
 const ico=(n,s=18)=>'<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+P[n]+'</svg>';
 const btn=(label,o={})=>h('button',{type:'button',class:'btn '+(o.cls||''),title:o.title,'aria-label':o.title||label,onclick:o.onclick,
@@ -309,8 +351,8 @@ const Store={
   get(k){return new Promise(res=>{if(!this.db)return res(this.mem);try{const r=this.db.transaction('kv').objectStore('kv').get(k);r.onsuccess=()=>res(r.result);r.onerror=()=>res();}catch(e){res();}});},
   set(k,v){return new Promise(res=>{if(!this.db){this.mem=v;return res(false);}try{const tx=this.db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res(true);tx.onerror=()=>res(false);tx.onabort=()=>res(false);}catch(e){res(false);}});}
 };
-let S={courses:[],reminders:[],activeCourse:null,theme:null};
-const ui={tab:'lecture',notes:{}};
+let S={courses:[],reminders:[],activeCourse:null,theme:null,site:'',paper:'dots'};
+const ui={tab:'lecture',notes:{},tasksOpen:{},taskOpen:{}};
 let saveT=null;
 const setStatus=t=>{$('#status').textContent=t;};
 function save(){
@@ -364,22 +406,22 @@ function renderMain(keep){
     oninput:()=>{c.name=nameIn.value;save();renderSide();}});
   const dots=h('div',{class:'dots',role:'group','aria-label':'Хичээлийн өнгө'},COLORS.map((col,i)=>h('button',{type:'button',class:'dot',style:'background:'+col,
     'aria-pressed':c.color===col,'aria-label':'Өнгө '+(i+1),onclick:()=>{c.color=col;save();renderSide();renderMain();}})));
-  m.append(h('div',{class:'head'},nameIn,dots,armed(btn('Хичээл устгах',{icon:'trash',cls:'ghost sm'}),()=>{
+  m.append(h('div',{class:'head'},nameIn,dots,btn('PDF',{icon:'pdf',cls:'sm',title:'PDF болгох',onclick:()=>openExport(c,ui.tab,currentNote(c))}),armed(btn('Хичээл устгах',{icon:'trash',cls:'ghost sm'}),()=>{
     S.courses=S.courses.filter(x=>x.id!==c.id);S.reminders=S.reminders.filter(r=>r.courseId!==c.id);
     S.activeCourse=S.courses[0]?S.courses[0].id:null;save();renderSide();renderBell();renderMain();})));
-  const tabs=h('div',{class:'tabs',role:'tablist'},['lecture','seminar','lab','tools'].map(k=>{
-    const cnt=k==='tools'?c.tools.length:c.notes[k].length;
+  const tabs=h('div',{class:'tabs',role:'tablist'},['lecture','seminar','lab','tasks','tools'].map(k=>{
+    const cnt=k==='tools'?c.tools.length:k==='tasks'?c.tasks.length:c.notes[k].length;
     return h('button',{type:'button',role:'tab',class:'tab','aria-selected':ui.tab===k,onclick:()=>{ui.tab=k;renderMain();}},
-      k==='tools'?'Хэрэгсэл':LABEL[k],h('span',{class:'n'},String(cnt)));
+      k==='tools'?'Хэрэгсэл':k==='tasks'?'Даалгавар':LABEL[k],h('span',{class:'n'},String(cnt)));
   }));
   m.append(tabs);
-  m.append(ui.tab==='tools'?toolsView(c):notesView(c,ui.tab));
+  m.append(ui.tab==='tools'?toolsView(c):ui.tab==='tasks'?tasksView(c):notesView(c,ui.tab));
   if(keep) window.scrollTo(0,y);
 }
 
 /* ---------- notes ---------- */
 function currentNote(c){
-  if(ui.tab==='tools')return null;
+  if(ui.tab==='tools'||ui.tab==='tasks')return null;
   const list=c.notes[ui.tab];return list.find(x=>x.id===ui.notes[c.id+ui.tab])||list[0]||null;
 }
 function addNote(c,type){
@@ -404,13 +446,16 @@ function editor(c,type,n,idx){
   const page=h('article',{class:'page'});
   page.append(h('div',{class:'page-head'},
     h('div',{},h('h2',{class:'page-title'},LABEL[type]+' '+(idx+1)),h('div',{class:'muted small'},fmtDate(n.created))),
-    armed(btn('Тэмдэглэл устгах',{icon:'trash',cls:'ghost sm'}),()=>{
-      c.notes[type]=c.notes[type].filter(x=>x.id!==n.id);save();renderSide();renderMain();})));
+    h('div',{class:'tbtns'},
+      btn('QR',{icon:'qr',cls:'sm',title:'QR код харуулах',onclick:()=>openQr(c,type,n)}),
+      btn('PDF',{icon:'pdf',cls:'sm',title:'PDF болгох',onclick:()=>openExport(c,type,n)}),
+      armed(btn('Тэмдэглэл устгах',{icon:'trash',cls:'ghost sm'}),()=>{
+        c.notes[type]=c.notes[type].filter(x=>x.id!==n.id);save();renderSide();renderMain();}))));
   const t=h('input',{class:'title-in',value:n.title,placeholder:'Сэдэв (заавал биш)','aria-label':'Сэдэв',oninput:()=>{n.title=t.value;save();}});
   page.append(t);
   const bl=h('div',{class:'blocks'});
   const paint=()=>{bl.innerHTML='';n.blocks.forEach((b,i)=>bl.append(blockEl(n,b,i,paint)));requestAnimationFrame(()=>bl.querySelectorAll('textarea').forEach(fit));};
-  paint();page.append(bl);
+  paint();page.append(bl);page.append(linkedTasks(c,n));
   const add=(b)=>{n.blocks.push(b);save();paint();};
   page.append(h('div',{class:'add-row'},
     btn('Бичвэр нэмэх',{icon:'text',onclick:()=>{add({id:uid(),type:'text',text:''});const a=bl.querySelectorAll('textarea');if(a.length)a[a.length-1].focus();}}),
@@ -607,7 +652,7 @@ function openModal(build,kind){
   const dlg=h('div',{class:'dlg',role:'dialog','aria-modal':'true'});ov.append(dlg);$('#modal').append(ov);modal={ov,dlg,build,kind};build(dlg);
   const f=dlg.querySelector('input,select');if(f)f.focus();
 }
-function closeModal(){$('#modal').innerHTML='';modal=null;}
+function closeModal(){if(modal&&modal.onClose){try{modal.onClose();}catch(e){}}$('#modal').innerHTML='';modal=null;}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal)closeModal();});
 
 function openCourseDlg(){
@@ -617,7 +662,7 @@ function openCourseDlg(){
     const dots=h('div',{class:'dots'});
     const paint=()=>{dots.innerHTML='';COLORS.forEach((col,i)=>dots.append(h('button',{type:'button',class:'dot',style:'background:'+col,'aria-pressed':col===color,'aria-label':'Өнгө '+(i+1),onclick:()=>{color=col;paint();}})));};
     const create=()=>{
-      const c={id:uid(),name:nm.value.trim()||'Шинэ хичээл',color,notes:{lecture:[],seminar:[],lab:[]},tools:[]};
+      const c={id:uid(),name:nm.value.trim()||'Шинэ хичээл',color,notes:{lecture:[],seminar:[],lab:[]},tools:[],tasks:[]};
       S.courses.push(c);S.activeCourse=c.id;ui.tab='lecture';save();closeModal();renderSide();renderMain();
     };
     paint();
@@ -681,13 +726,381 @@ function tick(){
   }
 }
 
+/* ================= v2: даалгавар, PDF, QR ================= */
+const DEFAULT_SITE='https://claude.ai/artifact/GzB5Mu49WSCP8XwkZAPtEY';
+const PAPERS={dots:'Цэгэн хуудас',lines:'Шугамтай хуудас',grid:'Тортой хуудас'};
+const NOTE_TYPES=['lecture','seminar','lab'];
+const SANS='Manrope,"Segoe UI",system-ui,Arial,sans-serif',HAND='Caveat,"Segoe Print","Comic Sans MS",cursive',INK='#1B2540',MUTED='#5B6987';
+const siteBase=()=>((S.site&&/^https?:\/\/\S+$/.test(S.site)?S.site:DEFAULT_SITE).split('#')[0]);
+const applyPaper=()=>document.body.setAttribute('data-paper',S.paper||'dots');
+const cut=(s,f)=>{s=String(s||'');return f>=1?s:(f<=0?'':s.slice(0,Math.floor(s.length*f))+'…');};
+const fld=(l,el)=>h('div',{class:'field'},h('label',{},l),el);
+const noteName=(c,t,n)=>LABEL[t]+' '+(c.notes[t].indexOf(n)+1);
+
+/* ----- payload (QR / холбоос) ----- */
+const b64u={
+  enc(bytes){let s='';for(let i=0;i<bytes.length;i+=8192)s+=String.fromCharCode.apply(null,bytes.subarray(i,i+8192));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');},
+  dec(str){str=str.replace(/-/g,'+').replace(/_/g,'/');while(str.length%4)str+='=';const s=atob(str),a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return a;}
+};
+async function pipeBytes(bytes,stream){const w=stream.writable.getWriter();w.write(bytes);w.close();return new Uint8Array(await new Response(stream.readable).arrayBuffer());}
+async function encodePayload(obj){
+  const raw=new TextEncoder().encode(JSON.stringify(obj));let z=null;
+  try{if(typeof CompressionStream!=='undefined')z=await pipeBytes(raw,new CompressionStream('deflate-raw'));}catch(e){}
+  return z&&z.length<raw.length?'z.'+b64u.enc(z):'p.'+b64u.enc(raw);
+}
+async function decodePayload(code){
+  const bytes=b64u.dec(code.slice(2));
+  const raw=code[0]==='z'?await pipeBytes(bytes,new DecompressionStream('deflate-raw')):bytes;
+  return JSON.parse(new TextDecoder().decode(raw));
+}
+const extractCode=str=>{const m=String(str||'').match(/(?:[#&?]s=|^\s*)([zp]\.[A-Za-z0-9_-]{4,})/);return m?m[1]:null;};
+function sanitize(p){
+  const s=(v,n)=>String(v==null?'':v).slice(0,n);
+  return{c:s(p.c,80),k:COLORS.includes(p.k)?p.k:null,t:['lecture','seminar','lab','tasks'].includes(p.t)?p.t:'lecture',i:Math.max(0,+p.i||0)|0,n:s(p.n,200),
+    x:(Array.isArray(p.x)?p.x:[]).slice(0,60).map(v=>s(v,6000)),
+    q:(Array.isArray(p.q)?p.q:[]).slice(0,60).map(q=>({t:s(q&&q.t,200),e:s(q&&q.e,4000),d:q&&q.d?1:0,u:/^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test((q&&q.u)||'')?q.u:''}))};
+}
+async function decodeAny(str){const code=extractCode(str);if(!code)throw new Error('no code');return sanitize(await decodePayload(code));}
+function notePayload(c,type,n,f){
+  const x=[];
+  n.blocks.forEach(b=>{if(b.type==='text'&&b.text.trim())x.push(cut(b.text.trim(),f));else if(b.type==='image'&&b.caption&&b.caption.trim())x.push(cut('[Зураг] '+b.caption.trim(),f));});
+  return{v:1,c:c.name,k:c.color,t:type,i:c.notes[type].indexOf(n)+1,n:n.title||'',x:x.filter(Boolean),
+    q:c.tasks.filter(t=>t.noteRef===n.id).map(t=>({t:cut(t.title,Math.max(f,.5)),e:cut(t.expl,f),d:t.done?1:0,u:t.due||''}))};
+}
+const tasksPayload=(c,f)=>({v:1,c:c.name,k:c.color,t:'tasks',x:[],q:c.tasks.map(t=>({t:cut(t.title,Math.max(f,.5)),e:cut(t.expl,f),d:t.done?1:0,u:t.due||''}))});
+async function fitCode(make){
+  for(const f of [1,.75,.55,.4,.28,.18,.1,0]){
+    const url=siteBase()+'#s='+await encodePayload(make(f));
+    if(url.length<=1800)return{url,trimmed:f<1};
+  }
+  return null;
+}
+function qrCanvas(text){
+  if(typeof qrcode==='undefined')return null;
+  let qr;try{qr=qrcode(0,'L');qr.addData(text);qr.make();}catch(e){return null;}
+  const n=qr.getModuleCount(),m=4,cell=n<=61?5:n<=93?4:3,size=cell*(n+2*m);
+  const cv=document.createElement('canvas');cv.width=cv.height=size;const g=cv.getContext('2d');
+  g.fillStyle='#fff';g.fillRect(0,0,size,size);g.fillStyle='#000';
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(qr.isDark(r,c))g.fillRect((c+m)*cell,(r+m)*cell,cell,cell);
+  return cv;
+}
+
+/* ----- PDF (өөрийн бичигч: хуудас бүр JPEG + дарах холбоос) ----- */
+function pdfStr(s){let h='FEFF';for(let i=0;i<s.length;i++)h+=s.charCodeAt(i).toString(16).padStart(4,'0');return '<'+h+'>';}
+function buildPdf(pages,title){
+  const enc=new TextEncoder(),chunks=[],offs=[];let len=0;
+  const push=x=>{const b=typeof x==='string'?enc.encode(x):x;chunks.push(b);len+=b.length;};
+  const begin=id=>{offs[id]=len;push(id+' 0 obj\n');},end=()=>push('\nendobj\n');
+  const W=595.28,H=841.89,n=pages.length;
+  push(new Uint8Array([37,80,68,70,45,49,46,52,10,37,226,227,207,211,10]));
+  begin(1);push('<< /Type /Catalog /Pages 2 0 R >>');end();
+  begin(2);push('<< /Type /Pages /Count '+n+' /Kids ['+pages.map((_,i)=>(4+i*3)+' 0 R').join(' ')+'] >>');end();
+  begin(3);push('<< /Title '+pdfStr(title||'Дэвтэр')+' /Producer (Devter) >>');end();
+  pages.forEach((p,i)=>{
+    const b=4+i*3,sc=W/p.w;let annots='';
+    if(p.link){
+      const L=p.link,r=[L.x*sc,H-(L.y+L.h)*sc,(L.x+L.w)*sc,H-L.y*sc].map(v=>v.toFixed(2)).join(' ');
+      const u=L.url.replace(/[()\\\s]/g,ch=>encodeURIComponent(ch));
+      annots=' /Annots [<< /Type /Annot /Subtype /Link /Rect ['+r+'] /Border [0 0 0] /A << /S /URI /URI ('+u+') >> >>]';
+    }
+    begin(b);push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+W+' '+H+'] /Resources << /XObject << /Im0 '+(b+2)+' 0 R >> >> /Contents '+(b+1)+' 0 R'+annots+' >>');end();
+    const cs='q '+W+' 0 0 '+H+' 0 0 cm /Im0 Do Q';
+    begin(b+1);push('<< /Length '+cs.length+' >>\nstream\n'+cs+'\nendstream');end();
+    begin(b+2);push('<< /Type /XObject /Subtype /Image /Width '+p.w+' /Height '+p.h+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+p.jpg.length+' >>\nstream\n');push(p.jpg);push('\nendstream');end();
+  });
+  const total=4+n*3,xo=len;
+  push('xref\n0 '+total+'\n0000000000 65535 f \n');
+  for(let id=1;id<total;id++)push(String(offs[id]).padStart(10,'0')+' 00000 n \n');
+  push('trailer\n<< /Size '+total+' /Root 1 0 R /Info 3 0 R >>\nstartxref\n'+xo+'\n%%EOF');
+  return new Blob(chunks,{type:'application/pdf'});
+}
+
+const PW=1240,PH=1754,PT=40,MX=60,PBOT=1680;
+function paintPaper(g,kind){
+  g.fillStyle='#fff';g.fillRect(0,0,PW,PH);
+  g.strokeStyle='#D3DAEA';g.fillStyle='#8E9CBF';g.lineWidth=1.5;
+  if(kind==='dots'){for(let y=PT;y<=PBOT;y+=PT)for(let x=MX;x<=PW-MX;x+=PT){g.beginPath();g.arc(x,y,2.4,0,7);g.fill();}}
+  else{
+    for(let y=PT;y<=PBOT;y+=PT){g.beginPath();g.moveTo(MX,y);g.lineTo(PW-MX,y);g.stroke();}
+    if(kind==='grid')for(let x=MX;x<=PW-MX;x+=PT){g.beginPath();g.moveTo(x,PT);g.lineTo(x,PBOT);g.stroke();}
+  }
+}
+function wrapText(g,text,maxW){
+  const out=[];
+  for(const para of String(text).split('\n')){
+    if(!para.trim()){out.push('');continue;}
+    let line='';
+    for(const word of para.split(/\s+/).filter(Boolean)){
+      let w=word;
+      while(g.measureText(w).width>maxW){let k=w.length;while(k>1&&g.measureText(w.slice(0,k)).width>maxW)k--;if(line){out.push(line);line='';}out.push(w.slice(0,k));w=w.slice(k);}
+      const t=line?line+' '+w:w;
+      if(g.measureText(t).width<=maxW)line=t;else{out.push(line);line=w;}
+    }
+    out.push(line);
+  }
+  return out;
+}
+const loadImg=src=>new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;});
+
+class Doc{
+  constructor(paper,name){this.paper=paper;this.name=name;this.pages=[];}
+  newPage(first){
+    const cv=document.createElement('canvas');cv.width=PW;cv.height=PH;const g=cv.getContext('2d');
+    paintPaper(g,this.paper);this.g=g;this.y=first?320:PT*3;this.cur={cv,link:null};this.pages.push(this.cur);
+  }
+  ensure(h){if(this.y+h>PBOT)this.newPage(false);}
+  text(str,o={}){
+    const g=this.g,size=o.size||26,x=o.x==null?MX:o.x,w=o.w||PW-MX-x;
+    g.font=(o.weight||500)+' '+size+'px '+SANS;g.fillStyle=o.color||INK;
+    for(const l of wrapText(g,str,w)){this.ensure(PT);g.font=(o.weight||500)+' '+size+'px '+SANS;g.fillStyle=o.color||INK;if(l)g.fillText(l,x,this.y+PT-11);this.y+=PT;}
+  }
+  async header(c,label,sub,meta,qrUrl){
+    const g=this.g;let qrW=0,qrBottom=0;
+    if(qrUrl){
+      const q=qrCanvas(qrUrl);
+      if(q){qrW=q.width;const qx=PW-MX-qrW,qy=40;g.drawImage(q,qx,qy);this.cur.link={x:qx,y:qy,w:q.width,h:q.height,url:qrUrl};
+        g.font='600 18px '+SANS;g.fillStyle=MUTED;g.textAlign='right';g.fillText('QR → сайтад нээх',PW-MX,qy+q.height+22);g.textAlign='left';qrBottom=qy+q.height+34;}
+    }
+    const maxW=PW-2*MX-(qrW?qrW+30:0);
+    g.font='800 24px '+SANS;g.fillStyle=c.color;g.fillText(wrapText(g,c.name,maxW)[0],MX,72);
+    let fs=80;g.font='700 '+fs+'px '+HAND;while(g.measureText(label).width>maxW&&fs>40){fs-=4;g.font='700 '+fs+'px '+HAND;}g.fillStyle=INK;g.fillText(label,MX,160);
+    g.font='700 30px '+SANS;const tl=wrapText(g,sub||'',maxW).slice(0,2);tl.forEach((l,i)=>g.fillText(l,MX,206+i*40));
+    g.font='500 22px '+SANS;g.fillStyle=MUTED;g.fillText(meta||'',MX,292);
+    this.y=Math.max(320,Math.ceil((qrBottom+8)/PT)*PT);
+  }
+  async pic(src,overlay){
+    const im=src?await loadImg(src):null,ov=overlay?await loadImg(overlay):null,base=im||ov;if(!base)return;
+    const iw=base.naturalWidth,ih=base.naturalHeight;let w=Math.min(PW-2*MX,iw),h=Math.round(ih*w/iw);
+    const maxH=PBOT-PT*4;if(h>maxH){h=maxH;w=Math.round(iw*h/ih);}
+    this.ensure(h+PT);const g=this.g,x=MX,y=this.y+8;
+    if(!im){g.fillStyle='#fff';g.fillRect(x,y,w,h);}
+    if(im)g.drawImage(im,x,y,w,h);if(ov)g.drawImage(ov,x,y,w,h);
+    g.strokeStyle='#C4CDE3';g.lineWidth=2;g.strokeRect(x,y,w,h);
+    this.y=Math.ceil((y+h+10)/PT)*PT;
+  }
+  task(c,t){
+    const no=c.tasks.indexOf(t)+1,g=this.g;this.ensure(PT*3);
+    const y0=this.y;g.strokeStyle=INK;g.lineWidth=2.5;g.strokeRect(MX,y0+7,24,24);
+    if(t.done){g.beginPath();g.moveTo(MX+5,y0+20);g.lineTo(MX+11,y0+27);g.lineTo(MX+21,y0+10);g.stroke();}
+    this.text('Даалгавар '+no+(t.title?' — '+t.title:''),{weight:800,x:MX+44});
+    if(t.due)this.text('Хугацаа: '+fmtDT(t.due),{size:22,color:MUTED,x:MX+44});
+    if(t.expl)this.text(t.expl,{x:MX+44});
+    this.y+=PT;
+  }
+  async note(c,type,n,o){
+    this.newPage(true);
+    const fit=o.qr?await fitCode(f=>notePayload(c,type,n,f)):null;
+    await this.header(c,noteName(c,type,n),n.title,fmtDate(n.created),fit&&fit.url);
+    for(const b of n.blocks){
+      if(b.type==='text'){if(b.text.trim()){this.text(b.text);this.y+=PT/2;this.y=Math.ceil(this.y/PT)*PT;}}
+      else if(b.type==='draw')await this.pic(null,b.data);
+      else if(b.type==='image'){await this.pic(b.src,b.overlay);if(b.caption&&b.caption.trim())this.text('▲ '+b.caption.trim(),{size:22,color:MUTED});}
+    }
+    if(o.noteTasks){const ts=c.tasks.filter(t=>t.noteRef===n.id);if(ts.length){this.y+=PT;this.text('Даалгавар',{size:34,weight:800,color:c.color});ts.forEach(t=>this.task(c,t));}}
+  }
+  async tasksPage(c,o){
+    this.newPage(true);
+    const done=c.tasks.filter(t=>t.done).length,fit=o.qr?await fitCode(f=>tasksPayload(c,f)):null;
+    await this.header(c,'Даалгаврууд',c.tasks.length+' даалгавар',done+' дууссан',fit&&fit.url);
+    c.tasks.forEach(t=>this.task(c,t));
+  }
+  blank(){this.newPage(false);const g=this.g;g.font='700 26px '+SANS;g.fillStyle=MUTED;g.fillText('Тэмдэглэл',MX,PT*2-11);this.y=PT*3;}
+  async finish(){
+    const N=this.pages.length,out=[];
+    this.pages.forEach((p,i)=>{
+      const g=p.cv.getContext('2d');g.fillStyle='#8E9CBF';g.font='500 20px '+SANS;g.textAlign='center';
+      g.fillText(this.name+'  ·  '+(i+1)+' / '+N,PW/2,PH-24);g.textAlign='left';
+      const b=atob(p.cv.toDataURL('image/jpeg',.9).split(',')[1]),bytes=new Uint8Array(b.length);
+      for(let j=0;j<b.length;j++)bytes[j]=b.charCodeAt(j);
+      out.push({jpg:bytes,w:PW,h:PH,link:p.link});p.cv.width=1;
+    });
+    return out;
+  }
+}
+async function makePdf(c,o){
+  try{await Promise.all([document.fonts.load('500 26px Manrope'),document.fonts.load('800 26px Manrope'),document.fonts.load('700 80px Caveat')]);}catch(e){}
+  const D=new Doc(o.paper,c.name);
+  if(o.scope==='note')await D.note(c,o.type,o.note,{qr:o.qr,noteTasks:o.tasks});
+  else{
+    for(const t of NOTE_TYPES)for(const n of c.notes[t]){if(o.progress)o.progress(noteName(c,t,n));await D.note(c,t,n,{qr:o.qr,noteTasks:false});}
+    if(o.tasks&&c.tasks.length)await D.tasksPage(c,o);
+  }
+  for(let i=0;i<o.blanks;i++)D.blank();
+  if(!D.pages.length)D.blank();
+  return buildPdf(await D.finish(),c.name);
+}
+async function savePdf(blob,filename){
+  let dl=null;try{dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;}catch(e){}
+  if(!dl){toast('Татах боломжгүй байна','Энэ харагдац файл татахыг дэмжихгүй байна. Сайтыг өөр цонхонд нээгээд дахин оролдоно уу.');return false;}
+  try{await dl.save({filename,data:blob});toast('PDF бэлэн боллоо',filename);return true;}
+  catch(e){if(!(e&&e.code==='declined'))toast('PDF хадгалж чадсангүй',(e&&e.message)||'');return false;}
+}
+function openExport(c,type,note){
+  openModal(dlg=>{
+    dlg.setAttribute('aria-label','PDF болгох');
+    const canNote=!!note&&NOTE_TYPES.includes(type),total=NOTE_TYPES.reduce((a,t)=>a+c.notes[t].length,0);
+    const scope=h('select',{class:'in'},canNote?h('option',{value:'note'},noteName(c,type,note)+' — зөвхөн энэ тэмдэглэл'):null,
+      h('option',{value:'course'},'Бүх хичээл ('+total+' тэмдэглэл'+(c.tasks.length?' + '+c.tasks.length+' даалгавар':'')+')'));
+    const paper=h('select',{class:'in'},Object.keys(PAPERS).map(k=>h('option',{value:k},PAPERS[k])));paper.value=S.paper||'dots';
+    const blanks=h('select',{class:'in'},[0,1,2,3,5].map(n=>h('option',{value:n},n===0?'Нэмэхгүй':n+' хуудас')));blanks.value='1';
+    const qr=h('input',{type:'checkbox'});qr.checked=true;const tk=h('input',{type:'checkbox'});tk.checked=true;
+    const msg=h('p',{class:'muted small',style:'margin:8px 0 0'});
+    const go=btn('PDF үүсгэх',{icon:'pdf',cls:'primary wide',onclick:async()=>{
+      go.disabled=true;const lab=go.querySelector('span');lab.textContent='Бэлдэж байна…';
+      try{
+        const blob=await makePdf(c,{scope:scope.value,type,note,paper:paper.value,blanks:+blanks.value,qr:qr.checked,tasks:tk.checked,progress:t=>{lab.textContent='Бэлдэж байна: '+t;}});
+        const fn=(c.name+(scope.value==='note'?' - '+noteName(c,type,note):'')+'.pdf').replace(/[\\/:*?"<>|]+/g,'_');
+        closeModal();await savePdf(blob,fn);
+      }catch(e){console.error(e);msg.textContent='PDF үүсгэж чадсангүй: '+(e&&e.message||e);go.disabled=false;lab.textContent='PDF үүсгэх';}
+    }});
+    dlg.append(h('div',{class:'dlg-h'},h('h2',{},'PDF болгох'),btn('',{icon:'x',title:'Хаах',cls:'ghost',onclick:closeModal})),
+      fld('Юуг',scope),h('div',{class:'two'},fld('Хуудасны төрөл',paper),fld('Хоосон бичих хуудас',blanks)),
+      h('label',{class:'chk'},qr,h('span',{},'Хуудас бүрийн эхэнд QR оруулах (сайтад нээгдэнэ)')),
+      h('label',{class:'chk'},tk,h('span',{},'Даалгавар, тайлбарыг оруулах')),
+      h('p',{class:'muted small'},'Тэмдэглэлийн бичвэр, зураас, зураг PDF-д цэгэн хуудсан дээр гарна. QR-д гарчиг, бичвэр, даалгаврын хураангуй багтана.'),
+      go,msg);
+  });
+}
+
+/* ----- QR цонх, оруулах, хуваалцсан харагдац ----- */
+async function openQr(c,type,n){
+  let dlgRef;
+  openModal(dlg=>{
+    dlgRef=dlg;dlg.setAttribute('aria-label','QR');
+    dlg.append(h('div',{class:'dlg-h'},h('h2',{},noteName(c,type,n)+' — QR'),btn('',{icon:'x',title:'Хаах',cls:'ghost',onclick:closeModal})),h('p',{class:'muted'},'Бэлдэж байна…'));
+  });
+  const fit=await fitCode(f=>notePayload(c,type,n,f));
+  if(!modal||modal.dlg!==dlgRef)return;
+  const cv=fit?qrCanvas(fit.url):null;
+  dlgRef.innerHTML='';
+  dlgRef.append(h('div',{class:'dlg-h'},h('h2',{},noteName(c,type,n)+' — QR'),btn('',{icon:'x',title:'Хаах',cls:'ghost',onclick:closeModal})));
+  if(!cv){dlgRef.append(h('p',{},fit?'QR сан ачаалагдсангүй. Интернэтээ шалгаад сайтыг дахин нээнэ үү.':'Энэ тэмдэглэл QR-д багтахгүй байна.'));return;}
+  cv.className='qrbig';
+  const link=h('input',{class:'in',readonly:true,value:fit.url,'aria-label':'Холбоос'});
+  dlgRef.append(h('div',{style:'text-align:center'},cv),
+    h('p',{class:'small muted'},'Утсаараа уншуулбал энэ тэмдэглэлийн гарчиг, бичвэр, даалгавар сайт дээр нээгдэнэ. Зураас, зураг QR-д багтахгүй — тэдгээр PDF-д байна.'+(fit.trimmed?' Тэмдэглэл урт тул бичвэрийн зөвхөн эхний хэсэг багтсан.':'')),
+    h('div',{class:'row',style:'flex-wrap:nowrap'},link,btn('Хуулах',{cls:'sm',onclick:async()=>{try{await navigator.clipboard.writeText(fit.url);toast('Холбоос хуулагдлаа');}catch(e){link.select();toast('Холбоосыг сонгосон, Ctrl+C дарна уу');}}})),
+    h('div',{class:'row',style:'margin-top:12px'},btn('PDF болгох',{icon:'pdf',onclick:()=>{closeModal();openExport(c,type,n);}})));
+}
+function importPayload(p){
+  let c=S.courses.find(x=>x.name.trim().toLowerCase()===p.c.trim().toLowerCase());
+  if(!c){c={id:uid(),name:p.c||'Импортолсон хичээл',color:p.k||COLORS[S.courses.length%COLORS.length],notes:{lecture:[],seminar:[],lab:[]},tools:[],tasks:[]};S.courses.push(c);}
+  let note=null;
+  if(p.t!=='tasks'&&(p.x.length||p.n)){
+    note={id:uid(),title:p.n,created:Date.now(),blocks:p.x.map(t=>({id:uid(),type:'text',text:t}))};
+    if(!note.blocks.length)note.blocks.push({id:uid(),type:'text',text:''});
+    c.notes[p.t].push(note);ui.notes[c.id+p.t]=note.id;
+  }
+  p.q.forEach(q=>{if(!c.tasks.some(t=>t.title===q.t&&t.expl===q.e))c.tasks.push({id:uid(),title:q.t,expl:q.e,done:!!q.d,due:q.u,noteRef:note?note.id:null});});
+  S.activeCourse=c.id;ui.tab=note?p.t:'tasks';ui.tasksOpen[c.id]=true;
+  save();renderSide();renderMain();toast('Дэвтэрт хадгаллаа',c.name+(note?' · '+LABEL[p.t]+' '+c.notes[p.t].length:''),c.color);
+}
+function openShared(p){
+  openModal(dlg=>{
+    dlg.classList.add('wide');dlg.setAttribute('aria-label','Хуваалцсан тэмдэглэл');
+    const label=p.t==='tasks'?'Даалгаврууд':LABEL[p.t]+(p.i?' '+p.i:'');
+    dlg.append(h('div',{class:'dlg-h'},h('h2',{},'Хуваалцсан тэмдэглэл'),btn('',{icon:'x',title:'Хаах',cls:'ghost',onclick:closeModal})),
+      h('div',{class:'muted small'},p.c||'Хичээл'),h('h3',{class:'sh-t'},label+(p.n?' — '+p.n:'')));
+    p.x.forEach(t=>dlg.append(h('p',{class:'sh-p'},t)));
+    if(p.q.length){
+      dlg.append(h('h3',{style:'margin:16px 0 6px;font-size:16px'},'Даалгаврууд ('+p.q.length+')'));
+      p.q.forEach((q,i)=>dlg.append(h('details',{class:'sh-task',open:i===0},h('summary',{},'Даалгавар '+(i+1)+(q.t?' — '+q.t:'')+(q.d?' ✓':'')),
+        h('div',{class:'sh-p'},q.e||'Тайлбар оруулаагүй.'),q.u?h('div',{class:'muted small'},'Хугацаа: '+fmtDT(q.u)):null)));
+    }
+    dlg.append(h('div',{class:'row',style:'margin-top:18px'},btn('Дэвтэртээ хадгалах',{icon:'plus',cls:'primary',onclick:()=>{closeModal();importPayload(p);}}),btn('Хаах',{onclick:closeModal})));
+  });
+}
+function openImport(){
+  openModal(dlg=>{
+    dlg.classList.add('wide');dlg.setAttribute('aria-label','QR-аас оруулах');
+    let stream=null,timer=null,busy=false;
+    const stop=()=>{clearInterval(timer);if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;};
+    modal.onClose=stop;
+    const ta=h('textarea',{class:'in',rows:4,placeholder:'QR-аас гарсан холбоос эсвэл кодыг энд буулгана уу…','aria-label':'QR холбоос'});
+    const msg=h('p',{class:'muted small',style:'min-height:20px'});
+    const video=h('video',{playsinline:'true',muted:'true',style:'width:100%;max-height:300px;border-radius:12px;display:none;background:#000;margin-top:8px'});
+    const go=async str=>{if(busy)return;busy=true;try{const p=await decodeAny(str);stop();closeModal();openShared(p);}catch(e){msg.textContent='Код танигдсангүй. QR-ын бүтэн холбоосыг хуулж оруулна уу.';busy=false;}};
+    const cam=h('div',{});
+    if('BarcodeDetector' in window&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
+      cam.append(btn('Камераар уншуулах',{cls:'sm',onclick:async()=>{
+        try{
+          stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});video.srcObject=stream;video.style.display='block';await video.play();
+          const det=new BarcodeDetector({formats:['qr_code']});msg.textContent='QR-аа камерын өмнө барина уу…';
+          timer=setInterval(async()=>{try{const r=await det.detect(video);if(r.length)go(r[0].rawValue);}catch(e){}},400);
+        }catch(e){stop();msg.textContent='Камер нээгдсэнгүй. Хөтчийн зөвшөөрлийг шалгана уу, эсвэл холбоосыг буулгаж оруулна уу.';}
+      }}));
+    }
+    dlg.append(h('div',{class:'dlg-h'},h('h2',{},'QR / холбоос оруулах'),btn('',{icon:'x',title:'Хаах',cls:'ghost',onclick:closeModal})),
+      h('p',{class:'muted small',style:'margin-top:0'},'PDF дээрх эсвэл өөр төхөөрөмж дээрх QR-ын холбоосыг оруулбал тэмдэглэл, даалгавар нь энд орж ирнэ.'),
+      ta,h('div',{class:'row',style:'margin-top:8px'},btn('Оруулах',{cls:'primary',onclick:()=>go(ta.value)}),cam),video,msg);
+  });
+}
+function openSettings(){
+  openModal(dlg=>{
+    dlg.setAttribute('aria-label','Тохиргоо');
+    const site=h('input',{class:'in',value:S.site||'',placeholder:DEFAULT_SITE,'aria-label':'Сайтын холбоос'});
+    const paper=h('select',{class:'in'},Object.keys(PAPERS).map(k=>h('option',{value:k},PAPERS[k])));paper.value=S.paper||'dots';
+    dlg.append(h('div',{class:'dlg-h'},h('h2',{},'Тохиргоо'),btn('',{icon:'x',title:'Хаах',cls:'ghost',onclick:closeModal})),
+      fld('Дэвтэр сайтын холбоос (QR энэ хаяг руу хөтөлнө)',site),
+      h('p',{class:'muted small',style:'margin-top:-6px'},'Хоосон орхивол анхдагч холбоос ашиглана.'),
+      fld('Цаасны төрөл (дэлгэц ба PDF)',paper),
+      btn('Хадгалах',{cls:'primary wide',onclick:()=>{S.site=site.value.trim();S.paper=paper.value;save();applyPaper();closeModal();toast('Тохиргоо хадгалагдлаа');}}));
+  });
+}
+
+/* ----- Даалгавар ----- */
+function noteOptions(c){const o=[];NOTE_TYPES.forEach(t=>c.notes[t].forEach((n,i)=>o.push({id:n.id,label:LABEL[t]+' '+(i+1)+(n.title?' — '+n.title:'')})));return o;}
+function tasksView(c){
+  const wrap=h('div',{class:'panel tasks'});
+  const total=c.tasks.length,done=c.tasks.filter(t=>t.done).length,open=!!ui.tasksOpen[c.id];
+  wrap.append(h('button',{type:'button',class:'task-sum','aria-expanded':open,onclick:()=>{ui.tasksOpen[c.id]=!open;renderMain(true);}},
+    h('span',{class:'ts-l'},h('strong',{},'Даалгаврууд'),h('span',{class:'muted small'},total?done+' / '+total+' дууссан · дарж жагсаалтыг нээнэ':'Одоохондоо даалгавар алга')),
+    h('span',{class:'prog'},h('i',{style:'width:'+(total?Math.round(done/total*100):0)+'%'})),
+    h('span',{class:'chev',html:ico('down',20)})));
+  wrap.append(h('div',{style:'margin:10px 0 0'},btn('Шинэ даалгавар',{icon:'plus',cls:'sm',onclick:()=>{
+    const t={id:uid(),title:'',expl:'',done:false,due:'',noteRef:null};c.tasks.push(t);ui.tasksOpen[c.id]=true;ui.taskOpen[t.id]=true;save();renderSide();renderMain(true);}})));
+  if(open){const list=h('div',{class:'tlist'});c.tasks.forEach((t,i)=>list.append(taskRow(c,t,i)));wrap.append(list);}
+  return wrap;
+}
+function taskRow(c,t,i){
+  const isOpen=!!ui.taskOpen[t.id],row=h('div',{class:'task'+(t.done?' done':'')});
+  const cb=h('input',{type:'checkbox','aria-label':'Дууссан',onchange:()=>{t.done=cb.checked;save();renderMain(true);}});cb.checked=!!t.done;
+  const ttl=h('span',{class:'ttl'},t.title||'Гарчиггүй');
+  row.append(h('div',{class:'task-h'},cb,h('button',{type:'button',class:'task-toggle','aria-expanded':isOpen,onclick:()=>{ui.taskOpen[t.id]=!isOpen;renderMain(true);}},
+    h('span',{class:'no'},'Даалгавар '+(i+1)),ttl,h('span',{class:'chev',html:ico('down')}))));
+  if(isOpen){
+    const ti=h('input',{class:'in',value:t.title,placeholder:'Даалгаврын нэр','aria-label':'Даалгаврын нэр',oninput:()=>{t.title=ti.value;ttl.textContent=t.title||'Гарчиггүй';save();}});
+    const ex=h('textarea',{class:'in caption2',rows:5,placeholder:'Тайлбар: юуг яаж хийх, ямар шаардлагатай, юуг анхаарах…','aria-label':'Тайлбар',value:t.expl||'',oninput:()=>{t.expl=ex.value;fit(ex);save();}});
+    const due=h('input',{class:'in',type:'datetime-local',value:t.due||'','aria-label':'Хугацаа',onchange:()=>{t.due=due.value;save();}});
+    const sel=h('select',{class:'in','aria-label':'Холбоотой тэмдэглэл',onchange:()=>{t.noteRef=sel.value||null;save();}},h('option',{value:''},'Холбоогүй'),noteOptions(c).map(o=>h('option',{value:o.id},o.label)));
+    sel.value=t.noteRef||'';
+    row.append(h('div',{class:'task-b'},fld('Нэр',ti),fld('Тайлбар',ex),h('div',{class:'two'},fld('Хугацаа (заавал биш)',due),fld('Холбоотой тэмдэглэл',sel)),
+      h('div',{class:'row'},btn('Сануулга тавих',{icon:'bell',cls:'sm',onclick:()=>{
+        if(!t.due){toast('Хугацаа сонгоно уу','Сануулга тавихын тулд эхлээд хугацаа оруулна уу.');return;}
+        S.reminders.push({id:uid(),title:'Даалгавар '+(i+1)+(t.title?': '+t.title:''),courseId:c.id,at:t.due,repeat:'none',done:false});save();renderBell();toast('Сануулга нэмэгдлээ',fmtDT(t.due),c.color);}}),
+        armed(btn('Устгах',{icon:'trash',cls:'ghost sm'}),()=>{c.tasks=c.tasks.filter(x=>x.id!==t.id);save();renderSide();renderMain(true);}))));
+    requestAnimationFrame(()=>fit(ex));
+  }
+  return row;
+}
+function linkedTasks(c,n){
+  const ts=c.tasks.filter(t=>t.noteRef===n.id);if(!ts.length)return h('div',{});
+  return h('div',{class:'linked'},h('span',{class:'muted small'},'Холбоотой даалгавар:'),ts.map(t=>h('button',{type:'button',class:'chip',onclick:()=>{ui.tab='tasks';ui.tasksOpen[c.id]=true;ui.taskOpen[t.id]=true;renderMain();}},'Даалгавар '+(c.tasks.indexOf(t)+1))));
+}
+async function handleHash(){
+  let hsh='';try{hsh=location.hash||'';}catch(e){}
+  if(!/s=[zp]\./.test(hsh))return;
+  try{const p=await decodeAny(hsh);openShared(p);try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}}catch(e){toast('Холбоос танигдсангүй','QR-ын холбоос гэмтсэн эсвэл дутуу байна.');}
+}
+
+
 /* ---------- boot ---------- */
 async function boot(){
   await Promise.race([Store.init(),new Promise(r=>setTimeout(r,1500))]);
   let saved;try{saved=await Store.get('state');}catch(e){}
   if(saved&&Array.isArray(saved.courses)){
-    S=Object.assign({courses:[],reminders:[],activeCourse:null,theme:null},saved);
-    S.courses.forEach(c=>{c.notes=c.notes||{};['lecture','seminar','lab'].forEach(k=>c.notes[k]=c.notes[k]||[]);c.tools=c.tools||[];});
+    S=Object.assign({courses:[],reminders:[],activeCourse:null,theme:null,site:'',paper:'dots'},saved);
+    S.courses.forEach(c=>{c.notes=c.notes||{};['lecture','seminar','lab'].forEach(k=>c.notes[k]=c.notes[k]||[]);c.tools=c.tools||[];c.tasks=c.tasks||[];});
     if(!S.courses.find(c=>c.id===S.activeCourse))S.activeCourse=S.courses[0]?S.courses[0].id:null;
   }
   $('#addCourseBtn').innerHTML=ico('plus')+'<span>Хичээл нэмэх</span>';
@@ -696,9 +1109,14 @@ async function boot(){
     const dark=S.theme?S.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
     S.theme=dark?'light':'dark';applyTheme();save();
   });
+  $('#importBtn').innerHTML=ico('qr')+'<span>QR / холбоос оруулах</span>';
+  $('#setBtn').innerHTML=ico('gear');
+  $('#importBtn').addEventListener('click',openImport);
+  $('#setBtn').addEventListener('click',openSettings);
   $('#addCourseBtn').addEventListener('click',openCourseDlg);
   $('#bellBtn').addEventListener('click',openReminders);
-  applyTheme();renderSide();renderBell();renderMain();setStatus('Бэлэн');
+  applyTheme();applyPaper();renderSide();renderBell();renderMain();setStatus('Бэлэн');
+  handleHash();window.addEventListener('hashchange',handleHash);
   setInterval(tick,1000);
 }
 boot();
