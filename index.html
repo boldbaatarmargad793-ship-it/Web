@@ -263,6 +263,18 @@ body[data-paper="lines"] .stage.grid{background-image:linear-gradient(rgba(47,91
 .sh-task{border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-bottom:8px}
 .sh-task summary{cursor:pointer;font-weight:700}
 .sh-task[open] summary{margin-bottom:8px}
+
+a.btn{text-decoration:none;color:inherit}
+a.btn.primary{color:var(--accent-ink)}
+.pv{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:12px}
+.pv-img{width:100%;height:auto;border:1px solid var(--line);border-radius:6px;background:#fff;display:block}
+#printRoot{display:none}
+@media print{
+  body>*:not(#printRoot){display:none!important}
+  #printRoot{display:block}
+  #printRoot img{width:100%;display:block;break-after:page;page-break-after:always}
+  @page{margin:0}
+}
 </style>
 </head>
 <body>
@@ -849,9 +861,9 @@ class Doc{
     this.pages.forEach((p,i)=>{
       const g=p.cv.getContext('2d');g.fillStyle='#8E9CBF';g.font='500 20px '+SANS;g.textAlign='center';
       g.fillText(this.name+'  ·  '+(i+1)+' / '+N,PW/2,PH-24);g.textAlign='left';
-      const b=atob(p.cv.toDataURL('image/jpeg',.9).split(',')[1]),bytes=new Uint8Array(b.length);
+      const url=p.cv.toDataURL('image/jpeg',.9),b=atob(url.split(',')[1]),bytes=new Uint8Array(b.length);
       for(let j=0;j<b.length;j++)bytes[j]=b.charCodeAt(j);
-      out.push({jpg:bytes,w:PW,h:PH,link:p.link});p.cv.width=1;
+      out.push({jpg:bytes,w:PW,h:PH,link:p.link,preview:url});p.cv.width=1;
     });
     return out;
   }
@@ -866,13 +878,37 @@ async function makePdf(c,o){
   }
   for(let i=0;i<o.blanks;i++)D.blank();
   if(!D.pages.length)D.blank();
-  return buildPdf(await D.finish(),c.name);
+  const pages=await D.finish(),blob=buildPdf(pages,c.name);
+  blob.previews=pages.map(p=>p.preview);
+  return blob;
 }
 async function savePdf(blob,filename){
   let dl=null;try{dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;}catch(e){}
-  if(!dl){toast('Татах боломжгүй байна','Энэ харагдац файл татахыг дэмжихгүй байна. Сайтыг өөр цонхонд нээгээд дахин оролдоно уу.');return false;}
-  try{await dl.save({filename,data:blob});toast('PDF бэлэн боллоо',filename);return true;}
-  catch(e){if(!(e&&e.code==='declined'))toast('PDF хадгалж чадсангүй',(e&&e.message)||'');return false;}
+  if(dl){
+    try{await dl.save({filename,data:blob});toast('PDF бэлэн боллоо',filename);return true;}
+    catch(e){if(e&&e.code==='declined')return false;}
+  }
+  openPdfReady(blob,filename);return false;
+}
+function printPages(prev){
+  let root=$('#printRoot');if(!root){root=h('div',{id:'printRoot'});document.body.append(root);}
+  root.innerHTML='';prev.forEach(src=>root.append(h('img',{src,alt:''})));
+  try{window.print();}catch(e){toast('Хэвлэх боломжгүй байна','Хуудсуудыг зураг болгон хадгалж авна уу.');}
+}
+function openPdfReady(blob,filename){
+  const url=URL.createObjectURL(blob),prev=blob.previews||[];
+  openModal(dlg=>{
+    dlg.classList.add('wide');dlg.setAttribute('aria-label','PDF бэлэн');
+    modal.onClose=()=>{setTimeout(()=>URL.revokeObjectURL(url),120000);};
+    dlg.append(h('div',{class:'dlg-h'},h('h2',{},'PDF бэлэн боллоо'),btn('',{icon:'x',title:'Хаах',cls:'ghost',onclick:closeModal})),
+      h('p',{class:'muted small',style:'margin-top:0'},'Энэ харагдац файлыг шууд татахыг зөвшөөрөхгүй байна. Доорх аль нэг замаар авна уу:'),
+      h('div',{class:'row'},
+        h('a',{class:'btn primary',href:url,download:filename},'PDF татах'),
+        h('a',{class:'btn',href:url,target:'_blank',rel:'noopener'},'Шинэ цонхонд нээх'),
+        btn('Хэвлэх / PDF болгох',{onclick:()=>printPages(prev)})),
+      h('p',{class:'muted small'},'Дээрх нь ажиллахгүй бол хуудас бүрийг зураг болгон хадгалж болно: компьютер дээр зураг дээр right-click → «Save image as…», утсан дээр зургийг удаан дарна. Мөн сайтыг Claude доторх карт биш, шинэ tab дээр нээгээд дахин оролдож болно.'),
+      h('div',{class:'pv'},prev.map((src,i)=>h('img',{class:'pv-img',src,alt:'Хуудас '+(i+1)}))));
+  });
 }
 function openExport(c,type,note){
   openModal(dlg=>{
